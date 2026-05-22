@@ -24,6 +24,7 @@ wifi:
 
 # Enable Home Assistant API
 api:
+  custom_services: true 
   encryption:
     key: !secret linp_doorbell_api_key
 
