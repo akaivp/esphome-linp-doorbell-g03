@@ -48,7 +48,7 @@ void LinpDoorbellComponent::loop() {
   if (Serial2.available() > 0) {
     std::string received = Serial2.readStringUntil('\r').c_str();
     ESP_LOGV(TAG, "RX: %s", received.c_str());
-    str::string response = handleMessage(received);
+    std::string response = handleMessage(received);
     if (response.length() > 0) {
       ESP_LOGV(TAG, "TX: %s", response.c_str());
       Serial2.print(response + "\r");
