@@ -12,11 +12,16 @@ float LinpDoorbellComponent::get_setup_priority() const { return setup_priority:
 void LinpDoorbellComponent::setup() {
   Serial2.begin(115200);
   hasSetVolume = false;
-  commandQueue.enqueue("down none");
-  commandQueue.enqueue("down none");
-  commandQueue.enqueue("down none");
-  commandQueue.enqueue("down get_volume");
-  commandQueue.enqueue("down get_switch_list");
+  // commandQueue.enqueue("down none");
+  commandQueue.push("down none");
+  // commandQueue.enqueue("down none");
+  commandQueue.push("down none");
+  // commandQueue.enqueue("down none");
+  commandQueue.push("down none");
+  // commandQueue.enqueue("down get_volume");
+  commandQueue.push("down get_volume");
+  // commandQueue.enqueue("down get_switch_list");
+  commandQueue.push("down get_switch_list");
 
   if (this->use_old_service_names_) {
     register_service(&LinpDoorbellComponent::setVolume, "linp_set_volume", {"volume"});
@@ -72,7 +77,9 @@ String LinpDoorbellComponent::handleMessage(String received) {
       if (requests.isEmpty()) {
         ESP_LOGD(TAG, "Unexpected property received: %s", value.c_str());
       } else {
-        String param = requests.dequeue();
+        // String param = requests.dequeue();
+        String param = requests.front();
+        requests.pop();
         handleParam(param, value);
       }
     }
@@ -89,18 +96,23 @@ String LinpDoorbellComponent::handleMessage(String received) {
     handleEvent(received);
     return String("ok");
   } else if (received.equals("get_down")) {
-    if (commandQueue.isEmpty()) {
+    // if (commandQueue.isEmpty()) {
+    if (commandQueue.empty()) {
       return String("down none");
     } else {
-      String response = commandQueue.dequeue();
+      // String response = commandQueue.dequeue();
+      String response = commandQueue.front();
+      commandQueue.pop();
       ESP_LOGD(TAG, "Sending command: %s", response.c_str());
       if (response.startsWith("down get_")) {
         // Strip the "down get_" prefix off.
         String request = String(response);
         request.remove(0, 9);
-        requests.enqueue(request);
+        // requests.enqueue(request);
+        requests.push(request);
       } else if (response.startsWith("down set_music")) {
-        requests.enqueue(String("music"));
+        // requests.enqueue(String("music"));
+        requests.push(String("music"));
       }
       return response;
     }
@@ -135,7 +147,8 @@ void LinpDoorbellComponent::handleEvent(String event) {
     });
   } else if(event.startsWith("learn_success")) {
     // Button learning succeded; request a fresh list (event supplies a list, but it's space-separated).
-    commandQueue.enqueue("down get_switch_list");
+    // commandQueue.enqueue("down get_switch_list");
+    commandQueue.push("down get_switch_list");
   }
 }
 
@@ -182,8 +195,10 @@ void LinpDoorbellComponent::setVolume(int volume) {
   ESP_LOGI(TAG, "Setting volume to: %i", volume);
   String command = String("down set_volume ");
   command.concat(volume);
-  commandQueue.enqueue(command);
-  commandQueue.enqueue("down get_volume");
+  // commandQueue.enqueue(command);
+  commandQueue.push(command);
+  // commandQueue.enqueue("down get_volume");
+  commandQueue.push("down get_volume");
 }
 
 void LinpDoorbellComponent::playTune(int tune) {
@@ -195,12 +210,14 @@ void LinpDoorbellComponent::playTune(int tune) {
   ESP_LOGI(TAG, "Playing tune: %i", tune);
   String command = String("down play_specified_music ");
   command.concat(tune);
-  commandQueue.enqueue(command);
+  // commandQueue.enqueue(command);
+  commandQueue.push(command);
 }
 
 void LinpDoorbellComponent::stopTune() {
   ESP_LOGI(TAG, "Stopping tune");
-  commandQueue.enqueue(String("down stop_play"));
+  // commandQueue.enqueue(String("down stop_play"));
+  commandQueue.push(String("down stop_play"));
 }
 
 void LinpDoorbellComponent::learnButton(int tune) {
@@ -212,7 +229,8 @@ void LinpDoorbellComponent::learnButton(int tune) {
   ESP_LOGI(TAG, "Entering learn mode with tune: %i", tune);
   String command = String("down enter_specified_learn_mode ");
   command.concat(tune);
-  commandQueue.enqueue(command);
+  // commandQueue.enqueue(command);
+  commandQueue.push(command);
 }
 
 void LinpDoorbellComponent::setTune(int button, int tune) {
@@ -230,7 +248,8 @@ void LinpDoorbellComponent::setTune(int button, int tune) {
   command.concat(button-1);
   command.concat(",");
   command.concat(tune);
-  commandQueue.enqueue(command);
+  // commandQueue.enqueue(command);
+  commandQueue.push(command);
 }
 
 void LinpDoorbellComponent::forgetButton(int button) {
@@ -242,15 +261,18 @@ void LinpDoorbellComponent::forgetButton(int button) {
 
   String command = String("down delete_specified_switch ");
   command.concat(button-1);
-  commandQueue.enqueue(command);
+  // commandQueue.enqueue(command);
+  commandQueue.push(command);
 
   // Doorbell sends a "switch list" param after forgetting the button.
-  requests.enqueue(String("switch_list"));
+  // requests.enqueue(String("switch_list"));
+  requests.push(String("switch_list"));
 }
 
 void LinpDoorbellComponent::sendRawCommand(std::string command) {
   ESP_LOGI(TAG, "Sending raw command: %s", command.c_str());
-  commandQueue.enqueue(String(command.c_str()));
+  // commandQueue.enqueue(String(command.c_str()));
+  commandQueue.push(String(command.c_str()));
 }
 
 }  // namespace linp_doorbell
