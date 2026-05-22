@@ -48,5 +48,5 @@ async def to_code(config):
     
     cg.add(var.set_use_old_service_names(config[CONF_USE_OLD_SERVICE_NAMES]))
 
-    cg.add_library("ArduinoQueue", "1.2.3")
+    #cg.add_library("ArduinoQueue", "1.2.3")
 
