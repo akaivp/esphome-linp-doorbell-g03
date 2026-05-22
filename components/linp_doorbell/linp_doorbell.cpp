@@ -12,15 +12,10 @@ float LinpDoorbellComponent::get_setup_priority() const { return setup_priority:
 void LinpDoorbellComponent::setup() {
   Serial2.begin(115200);
   hasSetVolume = false;
-  // commandQueue.enqueue("down none");
   commandQueue.push("down none");
-  // commandQueue.enqueue("down none");
   commandQueue.push("down none");
-  // commandQueue.enqueue("down none");
   commandQueue.push("down none");
-  // commandQueue.enqueue("down get_volume");
   commandQueue.push("down get_volume");
-  // commandQueue.enqueue("down get_switch_list");
   commandQueue.push("down get_switch_list");
 
   if (this->use_old_service_names_) {
@@ -51,9 +46,9 @@ void LinpDoorbellComponent::dump_config() {
 
 void LinpDoorbellComponent::loop() {
   if (Serial2.available() > 0) {
-    String received = Serial2.readStringUntil('\r');
+    std::string received = Serial2.readStringUntil('\r').c_str();
     ESP_LOGV(TAG, "RX: %s", received.c_str());
-    String response = handleMessage(received);
+    str::string response = handleMessage(received);
     if (response.length() > 0) {
       ESP_LOGV(TAG, "TX: %s", response.c_str());
       Serial2.print(response + "\r");
@@ -61,100 +56,83 @@ void LinpDoorbellComponent::loop() {
   }
 }
 
-String LinpDoorbellComponent::handleMessage(String received) {
+std::string LinpDoorbellComponent::handleMessage(std::string received) {
   if (isChiming) {
     isChiming = false;
     if (this->chime_playing_sensor_ != nullptr)
       this->chime_playing_sensor_->publish_state(0.0);
   }
-
-  if (received.equals("net")) {
-    return String("local");
-  } else if (received.startsWith("result ")) {
-    String value = String(received);
-    value.remove(0, 7);
-    if (!value.equals("\"ok\"")) {
-      if (requests.isEmpty()) {
+  if (received.compare("net") == 0) {
+    return ("local");
+  } else if (received.compare(0,7,"result ") == 0) {
+    std::string value = received.substr(7,received.length()-7);
+    if (value.compare(0,4,"\"ok\"") != 0) {
+      if (requests.empty()) {
         ESP_LOGD(TAG, "Unexpected property received: %s", value.c_str());
       } else {
-        // String param = requests.dequeue();
-        String param = requests.front();
+        std::string param = requests.front();
         requests.pop();
         handleParam(param, value);
       }
     }
-  } else if (received.startsWith("props ")) {
-    String param = String(received);
-    param.remove(0, 6);
-    String value = String(param);
-    int spacePos = param.indexOf(" ");
-    param.remove(spacePos, param.length() - spacePos);
-    value.remove(0, spacePos + 1);
+  } else if (received.compare(0,6,"props ") == 0) {
+    std::string param = received.substr(6, received.length()-6);
+    int spacePos = param.find(" ");
+    std::string value = param.substr(spacePos+1,param.length()-(spacePos+1));
+    param = param.substr(0, spacePos);
     ESP_LOGD(TAG, "Property received: %s = %s", param.c_str(), value.c_str());
-  } else if (received.startsWith("event ")) {
-    received.remove(0, 6);
+  } else if (received.compare(0,6,"event ") == 0) {
+    received = received.substr(6, received.length()-6);
     handleEvent(received);
-    return String("ok");
-  } else if (received.equals("get_down")) {
-    // if (commandQueue.isEmpty()) {
+    return ("ok");
+  } else if (received.compare("get_down") == 0) {
     if (commandQueue.empty()) {
-      return String("down none");
+      return ("down none");
     } else {
-      // String response = commandQueue.dequeue();
-      String response = commandQueue.front();
+      std::string response = commandQueue.front();
       commandQueue.pop();
       ESP_LOGD(TAG, "Sending command: %s", response.c_str());
-      if (response.startsWith("down get_")) {
+      if (response.compare(0,9,"down get_") == 0) {
         // Strip the "down get_" prefix off.
-        String request = String(response);
-        request.remove(0, 9);
-        // requests.enqueue(request);
-        requests.push(request);
-      } else if (response.startsWith("down set_music")) {
-        // requests.enqueue(String("music"));
-        requests.push(String("music"));
+        requests.push(response.substr(9,response.length()-9));
+      } else if (response.compare(0,14,"down set_music") == 0) {
+        requests.push("music");
       }
       return response;
     }
   }
-
   return "";
 }
 
-void LinpDoorbellComponent::handleEvent(String event) {
+void LinpDoorbellComponent::handleEvent(std::string event) {
   ESP_LOGI(TAG, "Event received: %s", event.c_str());
-  
-  if (event.startsWith("switch_pressed_")) {
-    event.remove(0, 15);
-    int buttonIndex = atoi(event.c_str());
-
+  if (event.compare(0,15,"switch_pressed_") == 0) {
+    int buttonIndex = atoi(event.substr(15, event.length()-15).c_str());
     char buttonStr[2];
     itoa(buttonIndex+1, buttonStr, 10); // Increment to get a 1-based number
     fire_homeassistant_event("esphome.linp_doorbell_button_pressed", {
       {"button", buttonStr},
       {"device", App.get_name()},
     });
-  } else if(event.startsWith("bell_ring")) {
-    event.remove(0, 10);
-
+  } else if(event.compare(0,10,"bell_ring ") == 0) {
+    event = event.substr(10,evnt.length()-10);
     if (this->chime_playing_sensor_ != nullptr)
       this->chime_playing_sensor_->publish_state(parse_number<float>(event.c_str()).value());
     isChiming = true;
-
     fire_homeassistant_event("esphome.linp_doorbell_tune_played", {
       {"tune", event.c_str()},
       {"device", App.get_name()},
     });
-  } else if(event.startsWith("learn_success")) {
+  } else if(event.compare("learn_success") == 0) {
     // Button learning succeded; request a fresh list (event supplies a list, but it's space-separated).
     // commandQueue.enqueue("down get_switch_list");
     commandQueue.push("down get_switch_list");
   }
 }
 
-void LinpDoorbellComponent::handleParam(String param, String value) {
+void LinpDoorbellComponent::handleParam(std::string param, std::string value) {
   ESP_LOGD(TAG, "Param received: %s = %s", param.c_str(), value.c_str());
-  if (param.equals("volume")) {
+  if (param.compare("volume") == 0) {
     if (!hasSetVolume) {
       // Volume needs to be reset on boot to put it back to the last set value.
       // This also jogs the doorbell to life so that it'll actually chime on first button press.
@@ -166,18 +144,18 @@ void LinpDoorbellComponent::handleParam(String param, String value) {
     }
     if (this->volume_sensor_ != nullptr)
       this->volume_sensor_->publish_state(parse_number<float>(value.c_str()).value());
-  } else if (param.equals("switch_list")) {
+  } else if (param.compare("switch_list") == 0) {
     // Comma-separated list of button tunes.
     int offset = 0;
     for(int i=0; i<10; i++) {
-      int commaPos = value.indexOf(',', offset);
-      if (commaPos == -1 && i < 9) {
+      int commaPos = value.find(',', offset);
+      if (commaPos == std::string::npos && i < 9) {
         // Comma not found.  Value might be malformed; we won't be able to find any more tunes, so stop here.
         break;
       }
-      String tune = value.substring(offset, commaPos);
+      std::string tune = value.substr(offset, commaPos-offset);
       auto tuneFloat = parse_number<float>(tune.c_str());
-      if (tune.equals("255")) {
+      if (tune.compare("255") == 0) {
         tuneFloat = -1;
       }
       //chime_sensors[i]->publish_state(tuneFloat.value());
@@ -191,13 +169,9 @@ void LinpDoorbellComponent::setVolume(int volume) {
     ESP_LOGI(TAG, "Ignoring invalid volume request: %i", volume);
     return;
   }
-
   ESP_LOGI(TAG, "Setting volume to: %i", volume);
-  String command = String("down set_volume ");
-  command.concat(volume);
-  // commandQueue.enqueue(command);
+  std::string command = str_sprintf("down set_volume %d", volume);
   commandQueue.push(command);
-  // commandQueue.enqueue("down get_volume");
   commandQueue.push("down get_volume");
 }
 
@@ -206,18 +180,14 @@ void LinpDoorbellComponent::playTune(int tune) {
     ESP_LOGI(TAG, "Ignoring invalid tune request: %i", tune);
     return;
   }
-
   ESP_LOGI(TAG, "Playing tune: %i", tune);
-  String command = String("down play_specified_music ");
-  command.concat(tune);
-  // commandQueue.enqueue(command);
+  std::string command = str_sprintf("down play_specified_music %d", tune);
   commandQueue.push(command);
 }
 
 void LinpDoorbellComponent::stopTune() {
   ESP_LOGI(TAG, "Stopping tune");
-  // commandQueue.enqueue(String("down stop_play"));
-  commandQueue.push(String("down stop_play"));
+  commandQueue.push("down stop_play");
 }
 
 void LinpDoorbellComponent::learnButton(int tune) {
@@ -225,11 +195,8 @@ void LinpDoorbellComponent::learnButton(int tune) {
     ESP_LOGI(TAG, "Ignoring learn request - invalid tune: %i", tune);
     return;
   }
-
   ESP_LOGI(TAG, "Entering learn mode with tune: %i", tune);
-  String command = String("down enter_specified_learn_mode ");
-  command.concat(tune);
-  // commandQueue.enqueue(command);
+  std::string command = str_sprintf("down enter_specified_learn_mode %d", tune);
   commandQueue.push(command);
 }
 
@@ -242,13 +209,8 @@ void LinpDoorbellComponent::setTune(int button, int tune) {
     ESP_LOGI(TAG, "Ignoring set tune request - invalid tune: %i", tune);
     return;
   }
-
   ESP_LOGI(TAG, "Setting button %i to tune: %i", button, tune);
-  String command = String("down set_music_for_switch ");
-  command.concat(button-1);
-  command.concat(",");
-  command.concat(tune);
-  // commandQueue.enqueue(command);
+  std::string command = str_sprintf("down set_music_for_switch %d, %d", button-1, tune);
   commandQueue.push(command);
 }
 
@@ -258,21 +220,15 @@ void LinpDoorbellComponent::forgetButton(int button) {
     return;
   }
   ESP_LOGI(TAG, "Forgetting button %i", button);
-
-  String command = String("down delete_specified_switch ");
-  command.concat(button-1);
-  // commandQueue.enqueue(command);
+  std::string command = str_sprintf(""down delete_specified_switch %d", button-1);
   commandQueue.push(command);
-
   // Doorbell sends a "switch list" param after forgetting the button.
-  // requests.enqueue(String("switch_list"));
-  requests.push(String("switch_list"));
+  requests.push("switch_list");
 }
 
 void LinpDoorbellComponent::sendRawCommand(std::string command) {
   ESP_LOGI(TAG, "Sending raw command: %s", command.c_str());
-  // commandQueue.enqueue(String(command.c_str()));
-  commandQueue.push(String(command.c_str()));
+  commandQueue.push(command.c_str());
 }
 
 }  // namespace linp_doorbell
