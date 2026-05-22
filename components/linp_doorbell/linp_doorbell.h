@@ -23,7 +23,7 @@ class LinpDoorbellComponent : public Component, api::CustomAPIDevice {
   void loop() override;
 
  protected:
-  String handleMessage(std:string received);
+  std:string handleMessage(std:string received);
   void handleEvent(std:string event);
   void handleParam(std:string param, std:string value);
   void setVolume(int volume);
