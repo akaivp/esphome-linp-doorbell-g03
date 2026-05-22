@@ -24,7 +24,8 @@ wifi:
 
 # Enable Home Assistant API
 api:
-  key: !secret linp_doorbell_api_key
+  encryption:
+    key: !secret linp_doorbell_api_key
 
 # Enable over-the-air updates
 ota:
