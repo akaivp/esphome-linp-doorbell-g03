@@ -11,7 +11,7 @@ namespace linp_doorbell {
 
 class LinpDoorbellComponent : public Component, api::CustomAPIDevice {
  public:
-  LinpDoorbellComponent() : commandQueue, requests { }
+  LinpDoorbellComponent() : commandQueue(), requests() { }
 
   void set_volume_sensor(sensor::Sensor *volume_sensor) { volume_sensor_ = volume_sensor; }
   void set_chime_playing_sensor(sensor::Sensor *chime_playing_sensor) { chime_playing_sensor_ = chime_playing_sensor; }
