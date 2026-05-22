@@ -3,7 +3,10 @@
 #include "esphome/core/component.h"
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/components/sensor/sensor.h"
-#include "ArduinoQueue.h"
+// #include "ArduinoQueue.h"
+#include <queue>
+#include <string>
+#include <WString.h> // Заголовок String для ESP-IDF (при использовании Arduino Core)
 
 namespace esphome {
 namespace linp_doorbell {
@@ -37,8 +40,10 @@ class LinpDoorbellComponent : public Component, api::CustomAPIDevice {
   sensor::Sensor *chime_playing_sensor_;
 
  private:
-  ArduinoQueue<String> commandQueue;
-  ArduinoQueue<String> requests;
+  // ArduinoQueue<String> commandQueue;
+  std::queue<std::string> commandQueue;
+  // ArduinoQueue<String> requests;
+  std::queue<std::string> requests;
   bool isChiming = false;
   bool hasSetVolume = false;
   bool use_old_service_names_{false};
