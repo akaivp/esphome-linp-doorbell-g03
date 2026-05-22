@@ -23,9 +23,9 @@ class LinpDoorbellComponent : public Component, api::CustomAPIDevice {
   void loop() override;
 
  protected:
-  std:string handleMessage(std:string received);
-  void handleEvent(std:string event);
-  void handleParam(std:string param, std:string value);
+  std::string handleMessage(std::string received);
+  void handleEvent(std::string event);
+  void handleParam(std::string param, std::string value);
   void setVolume(int volume);
   void playTune(int tune);
   void stopTune();
