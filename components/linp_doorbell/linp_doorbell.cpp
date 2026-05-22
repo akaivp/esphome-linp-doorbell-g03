@@ -2,6 +2,10 @@
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 
+#include "driver/uart.h"
+#include "driver/gpio.h"
+#include "esp_log.h"
+
 namespace esphome {
 namespace linp_doorbell {
 
@@ -10,7 +14,21 @@ static const char *const TAG = "linp_doorbell";
 float LinpDoorbellComponent::get_setup_priority() const { return setup_priority::HARDWARE; }
 
 void LinpDoorbellComponent::setup() {
-  Serial2.begin(115200);
+  uart_config_t uart_config = {
+    .baud_rate = 115200,
+    .data_bits = UART_DATA_8_BITS,
+    .parity = UART_PARITY_DISABLE,
+    .stop_bits = UART_STOP_BITS_1,
+    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+    .source_clk = UART_SCLK_APB,
+  };
+  // Устанавливаем UART2, размер буфера для RX/TX
+  uart_param_config(UART_NUM_2, &uart_config);
+  // Замените GPIO_NUM_X на те пины, которые вы используете (например, 16 и 17 для UART2)
+  // uart_set_pin(UART_NUM_2, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_driver_install(UART_NUM_2, 1024 * 2, 0, 0, NULL, 0);
+  //Serial2.begin(115200);
+  
   hasSetVolume = false;
   commandQueue.push("down none");
   commandQueue.push("down none");
