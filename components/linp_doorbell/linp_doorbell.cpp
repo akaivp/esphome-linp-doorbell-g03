@@ -114,7 +114,7 @@ void LinpDoorbellComponent::handleEvent(std::string event) {
       {"button", buttonStr},
       {"device", App.get_name()},
     });
-  } else if(event.compare(0,10,"bell_ring ") == 0) {
+  } else if(event.compare(0,9,"bell_ring") == 0) {
     event = event.substr(10,evnt.length()-10);
     if (this->chime_playing_sensor_ != nullptr)
       this->chime_playing_sensor_->publish_state(parse_number<float>(event.c_str()).value());
@@ -220,7 +220,7 @@ void LinpDoorbellComponent::forgetButton(int button) {
     return;
   }
   ESP_LOGI(TAG, "Forgetting button %i", button);
-  std::string command = str_sprintf(""down delete_specified_switch %d", button-1);
+  std::string command = str_sprintf("down delete_specified_switch %d", button-1);
   commandQueue.push(command);
   // Doorbell sends a "switch list" param after forgetting the button.
   requests.push("switch_list");
