@@ -115,7 +115,7 @@ void LinpDoorbellComponent::handleEvent(std::string event) {
       {"device", App.get_name()},
     });
   } else if(event.compare(0,9,"bell_ring") == 0) {
-    event = event.substr(10,evnt.length()-10);
+    event = event.substr(10,event.length()-10);
     if (this->chime_playing_sensor_ != nullptr)
       this->chime_playing_sensor_->publish_state(parse_number<float>(event.c_str()).value());
     isChiming = true;
