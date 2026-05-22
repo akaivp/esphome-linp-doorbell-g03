@@ -228,7 +228,7 @@ void LinpDoorbellComponent::forgetButton(int button) {
 
 void LinpDoorbellComponent::sendRawCommand(std::string command) {
   ESP_LOGI(TAG, "Sending raw command: %s", command.c_str());
-  commandQueue.push(command.c_str());
+  commandQueue.push(command);
 }
 
 }  // namespace linp_doorbell
