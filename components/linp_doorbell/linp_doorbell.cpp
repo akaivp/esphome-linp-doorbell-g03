@@ -3,11 +3,13 @@
 #include "esphome/core/application.h"
 
 #include "driver/uart.h"
-#include "driver/gpio.h"
-#include "esp_log.h"
+//#include "driver/gpio.h"
+//#include "esp_log.h"
 
 namespace esphome {
 namespace linp_doorbell {
+
+#define BUF_SIZE    (1024)
 
 static const char *const TAG = "linp_doorbell";
 
@@ -26,7 +28,7 @@ void LinpDoorbellComponent::setup() {
   uart_param_config(UART_NUM_2, &uart_config);
   // Замените GPIO_NUM_X на те пины, которые вы используете (например, 16 и 17 для UART2)
   // uart_set_pin(UART_NUM_2, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-  uart_driver_install(UART_NUM_2, 1024 * 2, 0, 0, NULL, 0);
+  uart_driver_install(UART_NUM_2, BUF_SIZE * 2, 0, 0, NULL, 0);
   //Serial2.begin(115200);
   
   hasSetVolume = false;
@@ -72,6 +74,29 @@ void LinpDoorbellComponent::loop() {
       Serial2.print(response + "\r");
     }
   }
+
+
+  char buffer[BUF_SIZE];
+  size_t length = 0;
+  uart_get_buffered_data_len(UART_NUM_2, &length);
+  if (length > 0) {
+    length = 0;
+    while (1) {
+      uint8_t c;
+      int read_bytes = uart_read_bytes(UART_NUM_2, &c, 1, 20 / portTICK_PERIOD_MS);
+      if (read_bytes <= 0 || c == '\r') {
+        // Таймаут/ошибка чтения или разделитель найден
+        break; 
+      }
+      buffer[length++] = c;
+    }
+    dest_buffer[length] = '\0'; // Добавление нулевого символа в конец
+    vTaskDelay(10 / portTICK_PERIOD_MS);
+  }
+
+
+  
+  
 }
 
 std::string LinpDoorbellComponent::handleMessage(std::string received) {
