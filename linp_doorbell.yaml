@@ -1,17 +1,21 @@
 esphome:
   name: linp_doorbell
           
-  platformio_options:
-    platform_packages:
-      - framework-arduinoespressif32 @ https://github.com/pauln/arduino-esp32.git#solo-no-mac-crc/1.0.6
-
+# Configure the board; the G6L-WIFI uses a single-core ESP32.
 esp32:
   board: esp32doit-devkit-v1
   framework:
-    type: arduino
-          
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_FREERTOS_UNICORE: y
+    advanced:
+      ignore_efuse_mac_crc: True
+      # Required for ESPHome v2024.10 and later - see issue #9
+      # Remove for earlier ESPHome versions, which don't support this option.
+      ignore_efuse_custom_mac: True
+
 external_components:
-  - source: github://pauln/esphome-linp-doorbell-g03@feature/external_components
+  - source: github://akaivp/esphome-linp-doorbell-g03@feature/external_components
     components: [ linp_doorbell ]
 
 wifi:
@@ -20,11 +24,21 @@ wifi:
 
 # Enable Home Assistant API
 api:
-  password: !secret api_password
+  key: !secret linp_doorbell_api_key
 
 # Enable over-the-air updates
 ota:
-  password: !secret ota_password
+  - platform: esphome
+    password: !secret ota_pwd
+
+# Enable logging
+logger:
+  level: DEBUG
+
+captive_portal:
+
+web_server:
+  port: 80
 
 sensor:
   - platform: linp_doorbell
