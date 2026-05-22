@@ -6,7 +6,7 @@
 // #include "ArduinoQueue.h"
 #include <queue>
 #include <string>
-#include <WString.h> // Заголовок String для ESP-IDF (при использовании Arduino Core)
+// #include <WString.h> // Заголовок String для ESP-IDF (при использовании Arduino Core)
 
 namespace esphome {
 namespace linp_doorbell {
