@@ -39,12 +39,12 @@ void LinpDoorbellComponent::setup() {
   commandQueue.push("down get_switch_list");
 
   register_service(&LinpDoorbellComponent::setVolume, "set_volume", {"volume"});
-  register_service(&LinpDoorbellComponent::playTune, "play_tune", {"tune"});
-  register_service(&LinpDoorbellComponent::stopTune, "stop_tune");
-  register_service(&LinpDoorbellComponent::learnButton, "learn_button", {"tune"});
-  register_service(&LinpDoorbellComponent::setTune, "set_tune", {"button", "tune"});
-  register_service(&LinpDoorbellComponent::forgetButton, "forget_button", {"button"});
-  register_service(&LinpDoorbellComponent::sendRawCommand, "send_raw_command", {"command"});
+  //register_service(&LinpDoorbellComponent::playTune, "play_tune", {"tune"});
+  //register_service(&LinpDoorbellComponent::stopTune, "stop_tune");
+  //register_service(&LinpDoorbellComponent::learnButton, "learn_button", {"tune"});
+  //register_service(&LinpDoorbellComponent::setTune, "set_tune", {"button", "tune"});
+  //register_service(&LinpDoorbellComponent::forgetButton, "forget_button", {"button"});
+  //register_service(&LinpDoorbellComponent::sendRawCommand, "send_raw_command", {"command"});
 }
 
 void LinpDoorbellComponent::dump_config() {
