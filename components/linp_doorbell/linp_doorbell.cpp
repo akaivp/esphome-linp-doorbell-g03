@@ -27,7 +27,7 @@ void LinpDoorbellComponent::setup() {
   // Устанавливаем UART2, размер буфера для RX/TX
   uart_param_config(UART_NUM_2, &uart_config);
   // Замените GPIO_NUM_X на те пины, которые вы используете (например, 16 и 17 для UART2)
-  // uart_set_pin(UART_NUM_2, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+  uart_set_pin(UART_NUM_2, 17, 16, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
   uart_driver_install(UART_NUM_2, BUF_SIZE * 2, 0, 0, NULL, 0);
   //Serial2.begin(115200);
   
@@ -65,17 +65,7 @@ void LinpDoorbellComponent::dump_config() {
 }
 
 void LinpDoorbellComponent::loop() {
-  if (Serial2.available() > 0) {
-    std::string received = Serial2.readStringUntil('\r').c_str();
-    ESP_LOGV(TAG, "RX: %s", received.c_str());
-    std::string response = handleMessage(received);
-    if (response.length() > 0) {
-      ESP_LOGV(TAG, "TX: %s", response.c_str());
-      Serial2.print(response + "\r");
-    }
-  }
-
-
+  //if (Serial2.available() > 0) {
   char buffer[BUF_SIZE];
   size_t length = 0;
   uart_get_buffered_data_len(UART_NUM_2, &length);
@@ -90,13 +80,19 @@ void LinpDoorbellComponent::loop() {
       }
       buffer[length++] = c;
     }
-    dest_buffer[length] = '\0'; // Добавление нулевого символа в конец
+    buffer[length] = '\0'; // Добавление нулевого символа в конец
     vTaskDelay(10 / portTICK_PERIOD_MS);
+    std::string received(buffer); // = Serial2.readStringUntil('\r').c_str();
+    ESP_LOGV(TAG, "RX: %s", received.c_str());
+    std::string response = handleMessage(received);
+    if (response.length() > 0) {
+      ESP_LOGV(TAG, "TX: %s", response.c_str());
+      //Serial2.print(response + "\r");
+      response = response + "\r";
+      uart_write_bytes(UART_NUM_2, response.c_str(), strlen(response.c_str()));
+    }
   }
-
-
-  
-  
+  //}
 }
 
 std::string LinpDoorbellComponent::handleMessage(std::string received) {
